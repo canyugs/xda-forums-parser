@@ -12,10 +12,10 @@ XDA_TOP_DEVICE_FILENAME = 'top_devices'
 XDA_TOP_DEVICE_XPATH = '//ul[@class="algoliahomedeviceimages"]/li/a[@class="device-result"]'
 XDA_THREAD_ROW_XPATH = '//div[@class="thread-listing"]/div[@class="thread-row"]'
 
+
 def write_file(filename, dict_data):
     with open(filename, 'w') as f:
-        json_data = json.dumps(dict_data, ensure_ascii=False)
-        f.write(json_data)
+        json_data = json.dump(dict_data, f)
     return json_data
 
 
@@ -34,6 +34,7 @@ def get_top_device():
     write_file(XDA_TOP_DEVICE_FILENAME, devices_josn)
 
     return top_devices
+
 
 def read_top_device_from_file():
     path = os.path.join(os.path.curdir, XDA_TOP_DEVICE_FILENAME)
@@ -120,8 +121,13 @@ if __name__ == '__main__':
     top_devices = read_top_device_from_file()
     print 'Top Devices: ', top_devices
 
-    target_device = top_devices[0]
+    # Change index here for different device to test
+    target_device = top_devices[1]
     print 'Target: ', target_device
     
     data = get_all_thread_in_device(target_device)
+    print 'Result:'
+    print data
+
+    # 
     write_file(target_device, data)
