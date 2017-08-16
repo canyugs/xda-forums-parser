@@ -41,9 +41,9 @@ def read_top_device_from_file():
     # TODO why load data twice ?
     with open(path) as f:
         data = f.read()
-    data = json.loads(data)
-    data_2nd = json.loads(data)
-    return data_2nd
+    data_string = json.loads(data)
+    data_list = json.loads(data_string)
+    return data_list
 
 def get_page_tree(url):
     page = requests.get(url)
@@ -118,11 +118,10 @@ def get_all_thread_in_device(device_name_in_fourm_link):
 
 if __name__ == '__main__':
     top_devices = read_top_device_from_file()
-    print top_devices
+    print 'Top Devices: ', top_devices
 
-    data = get_all_thread_in_device(top_devices[0])
-    data_json = json.dumps(data, ensure_ascii=False)
-
-    print data_json
-
-    write_file(top_devices[0], data)
+    target_device = top_devices[0]
+    print 'Target: ', target_device
+    
+    data = get_all_thread_in_device(target_device)
+    write_file(target_device, data)
