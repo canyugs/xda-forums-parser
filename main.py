@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+
 from lxml import html
 import datetime
 import json
+import os
 import re
 import requests
 
 XDA_FORUMS_URL = 'https://forum.xda-developers.com/'
+XDA_TOP_DEVICE_FILENAME = 'top_devices'
 XDA_TOP_DEVICE_XPATH = '//ul[@class="algoliahomedeviceimages"]/li/a[@class="device-result"]'
 XDA_THREAD_ROW_XPATH = '//div[@class="thread-listing"]/div[@class="thread-row"]'
 
@@ -14,6 +18,32 @@ def write_file(filename, dict_data):
         f.write(json_data)
     return json_data
 
+
+def get_top_device():
+    tree = get_page_tree(XDA_FORUMS_URL)
+    devices_link = tree.xpath(XDA_TOP_DEVICE_XPATH)
+
+    # get top devices name
+    top_devices = []
+
+    for element in devices_link:
+        name = element.get('href').split('/')[-1]
+        top_devices.append(name)
+
+    devices_josn = json.dumps(top_devices)
+    write_file(XDA_TOP_DEVICE_FILENAME, devices_josn)
+
+    return top_devices
+
+def read_top_device_from_file():
+    path = os.path.join(os.path.curdir, XDA_TOP_DEVICE_FILENAME)
+
+    # TODO why load data twice ?
+    with open(path) as f:
+        data = f.read()
+    data = json.loads(data)
+    data_2nd = json.loads(data)
+    return data_2nd
 
 def get_page_tree(url):
     page = requests.get(url)
@@ -87,18 +117,7 @@ def get_all_thread_in_device(device_name_in_fourm_link):
 
 
 if __name__ == '__main__':
-    
-    tree = get_page_tree(XDA_FORUMS_URL)
-    devices_link = tree.xpath(XDA_TOP_DEVICE_XPATH)
-
-    # get top devices name
-    print 'Top Devices'
-    top_devices = []
-
-    for element in devices_link:
-        name = element.get('href').split('/')[-1]
-        top_devices.append(name)
-
+    top_devices = read_top_device_from_file()
     print top_devices
 
     data = get_all_thread_in_device(top_devices[0])
