@@ -98,21 +98,43 @@ def get_thread_data(thread_tree):
     return post_id, thread
 
 
+
+
 def get_all_thread_in_device(device_name_in_fourm_link):
-    device_threads = {} 
-    # 1. go to development forum
+    device_threads = {}
+    total_forums_page = 1
+    
+    # Go to development forum to check total page
     target_url = XDA_FORUMS_URL + device_name_in_fourm_link + '/development'
     tree = get_page_tree(target_url)
     print target_url
 
-    # 2. get threads
-    thread_list = tree.xpath(XDA_THREAD_ROW_XPATH) 
+    # 可能只有一頁
+    try:
+        top_page_navigator = tree.xpath('//div[@class="pagenav"]')[0]
+        current_page = top_page_navigator.getchildren()[1]
 
-    # 3. get each thread data
-    for thd in thread_list:
-        post_id, thread = get_thread_data(thd)
-        # setup one post
-        device_threads[post_id] = thread
+        current_page_description = current_page.get('title')
+        # 'Showing results 1 to 20 of 43'
+        total_thread_number = int(current_page_description.split(' ')[-1])
+        thread_per_page = int(current_page_description.split(' ')[-3])
+        remaining = 1 if total_thread_number % thread_per_page < thread_per_page else 0 
+        total_forums_page = total_thread_number / thread_per_page + remaining
+    except:
+        print 'Only one page'
+
+    for page in xrange(1, total_forums_page + 1):
+        target_url = XDA_FORUMS_URL + device_name_in_fourm_link + '/development' + '/page{}'.format(page)
+        tree = get_page_tree(target_url)
+       
+        # 2. get all threads in this page
+        thread_list = tree.xpath(XDA_THREAD_ROW_XPATH) 
+
+        # 3. get each thread data
+        for thd in thread_list:
+            post_id, thread = get_thread_data(thd)
+            # setup one post
+            device_threads[post_id] = thread
 
     return device_threads
 
@@ -122,7 +144,7 @@ if __name__ == '__main__':
     print 'Top Devices: ', top_devices
 
     # Change index here for different device to test
-    target_device = top_devices[1]
+    target_device = top_devices[4]
     print 'Target: ', target_device
     
     data = get_all_thread_in_device(target_device)
