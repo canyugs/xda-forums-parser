@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from lxml import html
 import datetime
 import json
@@ -7,6 +6,7 @@ import os
 import re
 import requests
 
+CORRENT_DIR = os.path.curdir
 XDA_FORUMS_URL = 'https://forum.xda-developers.com/'
 XDA_TOP_DEVICE_FILENAME = 'top_devices'
 XDA_TOP_DEVICE_XPATH = '//ul[@class="algoliahomedeviceimages"]/li/a[@class="device-result"]'
@@ -14,6 +14,7 @@ XDA_THREAD_ROW_XPATH = '//div[@class="thread-listing"]/div[@class="thread-row"]'
 
 
 def write_file(filename, dict_data):
+    path = os.path.join(CORRENT_DIR, 'data', filename)
     with open(filename, 'w') as f:
         json_data = json.dump(dict_data, f)
     return json_data
@@ -45,6 +46,7 @@ def read_top_device_from_file():
     data_string = json.loads(data)
     data_list = json.loads(data_string)
     return data_list
+
 
 def get_page_tree(url):
     page = requests.get(url)
@@ -104,8 +106,6 @@ def get_thread_data(thread_tree):
     return post_id, thread
 
 
-
-
 def get_all_thread_in_device(device_name_in_fourm_link):
     device_threads = {}
     total_forums_page = 1
@@ -130,6 +130,7 @@ def get_all_thread_in_device(device_name_in_fourm_link):
         print 'Only one page'
 
     for page in xrange(1, total_forums_page + 1):
+        print 'Page {} processing'.format(page)
         target_url = XDA_FORUMS_URL + device_name_in_fourm_link + '/development' + '/page{}'.format(page)
         tree = get_page_tree(target_url)
        
@@ -149,13 +150,11 @@ if __name__ == '__main__':
     top_devices = read_top_device_from_file()
     print 'Top Devices: ', top_devices
 
-    # Change index here for different device to test
-    target_device = top_devices[4]
-    print 'Target: ', target_device
+    for device in top_devices:
+        target_device = device
+        print 'Target: ', target_device
     
-    data = get_all_thread_in_device(target_device)
-    print 'Result:'
-    print data
-
-    # 
-    write_file(target_device, data)
+        data = get_all_thread_in_device(target_device)
+        print 'Result:'
+        print data
+        write_file(target_device + '.json', data)
