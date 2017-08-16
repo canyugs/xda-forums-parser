@@ -101,8 +101,10 @@ def get_thread_data(thread_tree):
 
 
 def get_all_thread_in_device(device_name_in_fourm_link):
-    device_threads = {} 
-    # 1. go to development forum
+    device_threads = {}
+    total_forums_page = 1
+    
+    # Go to development forum to check total page
     target_url = XDA_FORUMS_URL + device_name_in_fourm_link + '/development'
     tree = get_page_tree(target_url)
     print target_url
@@ -121,14 +123,18 @@ def get_all_thread_in_device(device_name_in_fourm_link):
     except:
         print 'Only one page'
 
-    # 2. get all threads in this page
-    thread_list = tree.xpath(XDA_THREAD_ROW_XPATH) 
+    for page in xrange(1, total_forums_page + 1):
+        target_url = XDA_FORUMS_URL + device_name_in_fourm_link + '/development' + '/page{}'.format(page)
+        tree = get_page_tree(target_url)
+       
+        # 2. get all threads in this page
+        thread_list = tree.xpath(XDA_THREAD_ROW_XPATH) 
 
-    # 3. get each thread data
-    for thd in thread_list:
-        post_id, thread = get_thread_data(thd)
-        # setup one post
-        device_threads[post_id] = thread
+        # 3. get each thread data
+        for thd in thread_list:
+            post_id, thread = get_thread_data(thd)
+            # setup one post
+            device_threads[post_id] = thread
 
     return device_threads
 
