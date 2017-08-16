@@ -65,21 +65,27 @@ def get_thread_data(thread_tree):
     thread['title'] = title.xpath(TITLE_XPATH)[0].text
     thread['link'] = title.base.strip('/') + title.xpath(TITLE_XPATH)[0].get('href')
 
-    # 2. latest time 
-    date = latest_post.xpath('a')[0].text
+    # 2. latest time
+    try:
+        date = latest_post.xpath('a')[0].text
 
-    if date == 'Today':
-        date = str(datetime.date.today().strftime('%d %B %Y'))
-    elif date == 'Yesterday':
-        day = datetime.date.today() - datetime.timedelta(days=1)
-        date = str(day.strftime('%d %B %Y'))
+        if date == 'Today':
+            date = str(datetime.date.today().strftime('%d %B %Y'))
+        elif date == 'Yesterday':
+            day = datetime.date.today() - datetime.timedelta(days=1)
+            date = str(day.strftime('%d %B %Y'))
 
-        thread['latest_post_time']  = date
-
+            thread['latest_post_time']  = date
+    except:
+        thread['latest_post_time'] = 'Noun'
+        
     #3. replies and views
-    count_strings = counter.text_content()
-    result = re.findall(r'.*Replies: (?P<replies>\d.*)\r\n.*Views: (?P<views>\d.*)\r\n.*', count_strings)
-    thread['replies'], thread['views'] = result[0]
+    try:
+        count_strings = counter.text_content()
+        result = re.findall(r'.*Replies: (?P<replies>\d.*)\r\n.*Views: (?P<views>\d.*)\r\n.*', count_strings)
+        thread['replies'], thread['views'] = result[0]
+    except:
+        thread['replies'], thread['views'] = 0, 0
 
     # 4. get time of created thread #2 time
     print 'get thread @ ' + thread['link']
