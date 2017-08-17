@@ -6,7 +6,7 @@ import os
 import re
 import requests
 
-CORRENT_DIR = os.path.curdir
+CORRENT_DIR = os.path.abspath('.')
 XDA_FORUMS_URL = 'https://forum.xda-developers.com/'
 XDA_TOP_DEVICE_FILENAME = 'top_devices'
 XDA_TOP_DEVICE_XPATH = '//ul[@class="algoliahomedeviceimages"]/li/a[@class="device-result"]'
@@ -15,7 +15,7 @@ XDA_THREAD_ROW_XPATH = '//div[@class="thread-listing"]/div[@class="thread-row"]'
 
 def write_file(filename, dict_data):
     path = os.path.join(CORRENT_DIR, 'data', filename)
-    with open(filename, 'w') as f:
+    with open(path, 'w') as f:
         json_data = json.dump(dict_data, f)
     return json_data
 
@@ -53,10 +53,10 @@ def get_page_tree(url):
     return html.fromstring(page.content)
 
 
-def get_thread_data(thread_tree):
+def get_thread_data(thread_row):
     thread = {}
     # get thread elements and setup thread dict
-    icon, title, latest_post, counter = thread_tree.getchildren()
+    icon, title, latest_post, counter = thread_row.getchildren()
 
     # 0. id
     post_id = icon.get('id').split('_')[-1]
@@ -82,26 +82,47 @@ def get_thread_data(thread_tree):
         thread['latest_post_time'] = 'Noun'
         
     #3. replies and views
-    try:
-        count_strings = counter.text_content()
-        result = re.findall(r'.*Replies: (?P<replies>\d.*)\r\n.*Views: (?P<views>\d.*)\r\n.*', count_strings)
-        thread['replies'], thread['views'] = result[0]
-    except:
+    count_strings = counter.text_content()
+    result = re.findall(r'.*Replies: (?P<replies>\d.*)\r\n.*Views: (?P<views>\d.*)\r\n.*', count_strings)
+    if len(result) != 0:
+        replies, views = result[0]
+        thread['replies'], thread['views'] = int(replies.replace(',','')), int(views.replace(',',''))
+    else:
         thread['replies'], thread['views'] = 0, 0
 
-    # 4. get time of created thread #2 time
+    # 4. get time of created thread
     print 'get thread @ ' + thread['link']
     
-    if thread['replies'] != 0:
-        post_page = get_page_tree(thread['link'])
-        try:
-            second_post = post_page.xpath('//div[@class="postbit-wrapper "]')[2]
-            timestamp = second_post.xpath('//div[@class="post-head-container"]/div[@class="post-head post-head-right"]/span[@class="time"]')[0]
-            thread['#2_created_time'] = timestamp.text
-        except IndexError:
-            print 'No #2 post'
-    else:
-        thread['#2_created_time'] = 'None'
+    post_page = get_page_tree(thread['link'])
+    post_meta = post_page.xpath('//div[@id="thread-header-meta"]')[0]
+    timestamp = re.findall(r'.*, .* on (?P<date>.*)\r\n\r\n.*', post_meta.text_content())[0]
+
+    if 'Yesterday' in timestamp:
+        date = datetime.datetime.today() - datetime.timedelta(days=1)
+        timestamp = str(date.strftime('%d %B %Y, %I:%M %p'))
+    elif 'Today' in timestamp:
+        timestamp = str(datetime.datetime.today().strftime('%d %B %Y, %I:%M %p'))
+
+    day_position = timestamp[:5]
+    if 'th' in day_position:
+        timestamp = timestamp.replace('th', '', 1)
+    elif 'st' in day_position:
+        timestamp = timestamp.replace('st', '', 1)
+    elif 'nd' in day_position:
+        timestamp = timestamp.replace('nd', '', 1)
+    elif 'rd' in day_position:
+        timestamp = timestamp.replace('rd', '',1)
+
+    thread['created_time'] = timestamp
+    thread['today'] = str(datetime.datetime.today().strftime('%d %B %Y, %I:%M %p'))
+
+    # 5.time duration and views per day
+    # 15th April 2016, 07:06 PM
+    time_format = '%d %B %Y, %I:%M %p'
+    start_time = datetime.datetime.strptime(thread['created_time'], time_format)
+    end_time = datetime.datetime.today()
+    thread['duration_days'] = (end_time - start_time).days
+    thread['views_per_day'] = thread['views'] / thread['duration_days']
 
     return post_id, thread
 
@@ -150,6 +171,7 @@ if __name__ == '__main__':
     top_devices = read_top_device_from_file()
     print 'Top Devices: ', top_devices
 
+    # All devices
     for device in top_devices:
         target_device = device
         print 'Target: ', target_device
