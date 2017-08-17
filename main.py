@@ -5,8 +5,10 @@ import json
 import os
 import re
 import requests
+import pprint
 
 CORRENT_DIR = os.path.abspath('.')
+DATA_DIR = os.path.join(CORRENT_DIR, 'data')
 XDA_FORUMS_URL = 'https://forum.xda-developers.com/'
 XDA_TOP_DEVICE_FILENAME = 'top_devices'
 XDA_TOP_DEVICE_XPATH = '//ul[@class="algoliahomedeviceimages"]/li/a[@class="device-result"]'
@@ -14,6 +16,8 @@ XDA_THREAD_ROW_XPATH = '//div[@class="thread-listing"]/div[@class="thread-row"]'
 
 
 def write_file(filename, dict_data):
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
     path = os.path.join(CORRENT_DIR, 'data', filename)
     with open(path, 'w') as f:
         json_data = json.dump(dict_data, f)
@@ -168,6 +172,7 @@ def get_all_thread_in_device(device_name_in_fourm_link):
 
 
 if __name__ == '__main__':
+    pp = pprint.PrettyPrinter()
     top_devices = read_top_device_from_file()
     print 'Top Devices: ', top_devices
 
@@ -178,5 +183,5 @@ if __name__ == '__main__':
     
         data = get_all_thread_in_device(target_device)
         print 'Result:'
-        print data
+        pp.pprint(data)
         write_file(target_device + '.json', data)
